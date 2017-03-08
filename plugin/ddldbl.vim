@@ -6,16 +6,14 @@
 "
 "	\brief		Delete Duplicate Lines and Delete Blank Lines.
 "
-"	\author		Robert KellyIV <Sreny@SverGbc.Pbz> (Rot13ed)
-"	\date		Thu, 14 Nov 2002 23:04 Pacific Standard Time
-"	\version	$Id: ddldbl.vim,v 1.1 2002/11/15 07:04:20 root Exp $
-"	Version:	0.1
+"	\author		Tony Tan <star.stroll@gmail.com>
+"	\date		2017/03/07 
+"	Version:	0.1.1
 "	History: {{{
-"	[Feral:318/02@21:45] 0.1
 "		Initial
 "	Improvments:
 "		Added commands :DDL and :DBL
-"		DDL is 'Delete Duplicate Lines' while dbl is 'Delete Blank
+"		DDL is 'Delete Duplicate Lines' while DBL is 'Delete Blank
 "			Lines'(lines containing only whitespace)
 "		Both operate on a range of lines; defaulting to the entire file.
 "	Limitations:
@@ -27,10 +25,10 @@
 "
 "}}}
 
-if exists("loaded_ddldbl")
+if exists("plugin_ddl")
 	finish
 endif
-let loaded_ddldbl = 1
+let plugin_ddl = 1
 
 let s:save_cpo = &cpo
 set cpo&vim
@@ -43,6 +41,7 @@ function s:FeralDeleteDuplicateLines() range "{{{
 
 	let Top_Line = a:firstline
 	let End_Line = a:lastline
+	let flags = []
 "	echo confirm(Top_Line.','.End_Line)
 
 	silent! execute Top_Line.','.End_Line.'foldopen!'
@@ -50,22 +49,33 @@ function s:FeralDeleteDuplicateLines() range "{{{
 	execute "normal! ".Top_Line.'G'
 	while line('.') < End_Line
 		let Cur_Line = line('.')
+		if index(flags, Cur_Line) >= 0
+			execute "normal! ".Cur_Line.'G'
+			normal! j
+			continue
+		endif
 		let DaLine = '^'.escape(getline('.'), '\*^$.~').'$'
 		while search(DaLine, 'W') != 0
-			if line('.') <= End_Line
+			let match_line = line('.')
+			if match_line <= End_Line && index(flags, match_line) < 0
+				call add(flags, match_line)
 "				echo 'Deleting line('.line('.').'):'.getline('.')
-				let End_Line = End_Line - 1
-				delete
-			else
-"				echo 'found line is past our range; ignoring it and the rest of them'
-				break
 			endif
 		endwhile
 		execute "normal! ".Cur_Line.'G'
 		normal! j
 	endwhile
-
+	let sorted_flags = sort(flags, "IntComp")
+	for rownum in sorted_flags
+		execute "normal!".rownum.'G'
+		delete
+	endfor
 endfunction
+
+func IntComp(i1, i2)
+	return a:i2 - a:i1
+endfunc
+
 "}}}
 endif
 " }}}
